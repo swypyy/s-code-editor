@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#09090f">
-<title>S - Code Editor | Swypyy</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#09090f">
+  <title>S - Code Editor | Swypyy</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
@@ -30,28 +30,12 @@
   </div>
 
   <div class="topbar-actions">
-    <input
-      type="file"
-      id="zip-file-input"
-      accept=".zip,application/zip"
-      hidden
-    >
+    <input type="file" id="zip-file-input" accept=".zip,application/zip" hidden>
 
-    <button class="button button-quiet" id="import-zip-button">
-      Import ZIP
-    </button>
-
-    <button class="button button-quiet" id="export-zip-button">
-      Export ZIP
-    </button>
-
-    <button class="button button-quiet" id="reset-button">
-      Reset
-    </button>
-
-    <button class="button button-primary" id="run-button">
-      ▶ Run
-    </button>
+    <button class="button button-quiet" id="import-zip-button">Import ZIP</button>
+    <button class="button button-quiet" id="export-zip-button">Export ZIP</button>
+    <button class="button button-quiet" id="reset-button">Reset</button>
+    <button class="button button-primary" id="run-button">▶ Run</button>
   </div>
 </header>
 
@@ -60,13 +44,10 @@
   <aside class="sidebar">
     <div class="panel-heading">
       <span>EXPLORER</span>
-      <button class="icon-button" id="new-file-button" title="New file">
-        ＋
-      </button>
+      <button class="icon-button" id="new-file-button" title="New file">＋</button>
     </div>
 
     <div class="project-label">⌄ MY PROJECT</div>
-
     <nav class="file-list" id="file-list"></nav>
 
     <div class="sidebar-note">
@@ -76,7 +57,6 @@
   </aside>
 
   <section class="editor-panel">
-
     <div class="tabs" id="editor-tabs"></div>
 
     <div class="editor-toolbar">
@@ -93,11 +73,9 @@
       <span id="cursor-position">Line 1, Column 1</span>
       <span id="language-label">HTML</span>
     </div>
-
   </section>
 
   <section class="preview-panel">
-
     <div class="preview-toolbar">
       <div class="preview-title">
         <span class="preview-symbol">◉</span>
@@ -106,22 +84,15 @@
 
       <div class="preview-actions">
         <span class="preview-state">LOCAL</span>
-        <button class="icon-button" id="refresh-button" title="Refresh preview">
-          ↻
-        </button>
+        <button class="icon-button" id="refresh-button" title="Refresh preview">↻</button>
       </div>
     </div>
 
     <div class="preview-canvas">
-      <iframe
-        id="preview-frame"
-        title="Project live preview"
-        sandbox="allow-scripts"
-      ></iframe>
+      <iframe id="preview-frame" title="Project live preview" sandbox="allow-scripts"></iframe>
     </div>
 
     <section class="console-panel">
-
       <div class="console-toolbar">
         <div class="console-heading">
           <span>⌁</span>
@@ -130,25 +101,19 @@
         </div>
 
         <div class="console-actions">
-          <button class="icon-button" id="clear-console-button" title="Clear console">
-            ⌫
-          </button>
+          <button class="icon-button" id="clear-console-button" title="Clear console">⌫</button>
         </div>
       </div>
 
       <div class="console-output" id="console-output">
-        <div class="console-empty">
-          Console is ready. Run your project to see messages.
-        </div>
+        <div class="console-empty">Console is ready. Run your project to see messages.</div>
       </div>
-
     </section>
 
     <div class="preview-footer">
       <span><span class="status-dot"></span> Preview ready</span>
       <span>Runs in your browser</span>
     </div>
-
   </section>
 
 </main>
@@ -158,13 +123,54 @@
 <!-- Monaco Editor -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
 
-<!-- ZIP Support -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<!-- Load ZIP library with automatic fallback -->
+<script>
+window.zipLibraryReady = (async function () {
+  const sources = [
+    "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
+    "https://unpkg.com/jszip@3.10.1/dist/jszip.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+  ];
 
-<!-- Main Application -->
-<script src="app.js"></script>
+  for (const source of sources) {
+    try {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = source;
+        script.onload = resolve;
+        script.onerror = () => {
+          script.remove();
+          reject(new Error("Could not load " + source));
+        };
+        document.head.appendChild(script);
+      });
+
+      if (typeof window.JSZip === "function") {
+        console.log("ZIP library loaded:", source);
+        return true;
+      }
+    } catch (error) {
+      console.warn(error.message);
+    }
+  }
+
+  console.error("All ZIP library sources failed.");
+  return false;
+})();
+</script>
+
+<!-- Load application after ZIP library loading finishes -->
+<script>
+window.zipLibraryReady.then(function (loaded) {
+  if (!loaded) {
+    console.error("ZIP import and export are unavailable.");
+  }
+
+  const app = document.createElement("script");
+  app.src = "app.js";
+  document.body.appendChild(app);
+});
+</script>
 
 </body>
 </html>
