@@ -8,6 +8,8 @@
   --purple: #9871ff;
   --purple-light: #b49aff;
   --green: #54d69a;
+  --red: #ff707d;
+  --yellow: #f4cc70;
 }
 
 * {
@@ -125,13 +127,15 @@ button {
 .workspace {
   height: calc(100vh - 66px);
   display: grid;
-  grid-template-columns: 205px minmax(300px, 1fr) minmax(300px, 1fr);
+  grid-template-columns: 205px minmax(300px, 1fr) minmax(320px, 1fr);
+  min-width: 0;
 }
 
 .sidebar {
   background: var(--panel);
   border-right: 1px solid var(--border);
   position: relative;
+  min-width: 0;
 }
 
 .panel-heading {
@@ -150,7 +154,7 @@ button {
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 19px;
+  font-size: 17px;
   padding: 5px 8px;
   border-radius: 5px;
 }
@@ -254,6 +258,7 @@ button {
 
 .tabs {
   height: 43px;
+  flex-shrink: 0;
   display: flex;
   align-items: stretch;
   overflow-x: auto;
@@ -283,6 +288,7 @@ button {
 .editor-toolbar,
 .preview-toolbar {
   height: 42px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -298,7 +304,7 @@ button {
 
 #editor {
   flex: 1;
-  min-height: 0;
+  min-height: 100px;
   overflow: hidden;
 }
 
@@ -320,6 +326,7 @@ button {
 .editor-footer,
 .preview-footer {
   height: 29px;
+  flex-shrink: 0;
   padding: 0 12px;
   display: flex;
   align-items: center;
@@ -362,7 +369,7 @@ button {
 
 .preview-canvas {
   flex: 1;
-  min-height: 0;
+  min-height: 100px;
   background: white;
   overflow: hidden;
 }
@@ -372,6 +379,78 @@ button {
   height: 100%;
   border: 0;
   background: white;
+}
+
+.console-panel {
+  height: 190px;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  background: #0b0b12;
+  border-top: 1px solid var(--border);
+}
+
+.console-toolbar {
+  height: 37px;
+  flex-shrink: 0;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+
+.console-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+  color: #ddddea;
+}
+
+.console-heading > span:first-child {
+  color: var(--purple-light);
+  font-size: 16px;
+}
+
+.console-count {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.console-output {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 9px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+}
+
+.console-empty {
+  color: var(--muted);
+  padding: 5px 0;
+}
+
+.console-entry {
+  padding: 6px 5px;
+  border-bottom: 1px solid #20202c;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #d7d7e5;
+}
+
+.console-entry.error {
+  color: var(--red);
+  background: #28151c;
+}
+
+.console-entry.warn {
+  color: var(--yellow);
+}
+
+.console-entry.info {
+  color: #85b8ff;
 }
 
 .toast {
@@ -398,6 +477,7 @@ button {
 @media (max-width: 850px) {
   body {
     overflow: auto;
+    height: auto;
   }
 
   .workspace {
@@ -410,13 +490,12 @@ button {
     display: none;
   }
 
-  .editor-panel,
-  .preview-panel {
+  .editor-panel {
     min-height: 500px;
   }
 
   .preview-panel {
-    min-height: 400px;
+    min-height: 550px;
   }
 
   .topbar-center {
