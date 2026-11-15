@@ -19,7 +19,6 @@ const starterFiles = {
   background: #f4f4f4;
   color: #222;
 }
-
 h1 {
   color: #7045db;
 }`,
@@ -57,6 +56,8 @@ function showToast(message) {
     toast.classList.remove("show");
   }, 2200);
 }
+
+// STORAGE
 
 function loadFiles() {
   try {
@@ -107,6 +108,8 @@ function scheduleSave() {
   }, 500);
 }
 
+// LANGUAGE
+
 function getLanguage(filename) {
   const extension = filename.split(".").pop().toLowerCase();
 
@@ -118,7 +121,21 @@ function getLanguage(filename) {
     json: "json",
     txt: "plaintext",
     md: "markdown",
-    xml: "xml"
+    xml: "xml",
+    svg: "xml",
+    ts: "typescript",
+    tsx: "typescript",
+    jsx: "javascript",
+    py: "python",
+    java: "java",
+    cpp: "cpp",
+    c: "c",
+    sql: "sql",
+    php: "php",
+    yaml: "yaml",
+    yml: "yaml",
+    scss: "scss",
+    less: "less"
   };
 
   return languages[extension] || "plaintext";
@@ -131,10 +148,20 @@ function getLanguageName(filename) {
     html: "HTML",
     css: "CSS",
     javascript: "JavaScript",
+    typescript: "TypeScript",
     json: "JSON",
     plaintext: "Plain Text",
     markdown: "Markdown",
-    xml: "XML"
+    xml: "XML",
+    python: "Python",
+    java: "Java",
+    cpp: "C++",
+    c: "C",
+    sql: "SQL",
+    php: "PHP",
+    yaml: "YAML",
+    scss: "SCSS",
+    less: "LESS"
   };
 
   return names[language] || "Plain Text";
@@ -160,6 +187,8 @@ function getIconText(filename) {
   return "•";
 }
 
+// EDITOR VALUES
+
 function getEditorValue() {
   if (usingMonaco && editor) {
     return editor.getValue();
@@ -181,6 +210,8 @@ function storeCurrentFile() {
     files[currentFile] = getEditorValue();
   }
 }
+
+// FILE EXPLORER
 
 function renderFileList() {
   fileList.innerHTML = "";
@@ -243,6 +274,7 @@ function renderTabs() {
 
 function updateEditorLanguage() {
   document.getElementById("current-file-label").textContent = currentFile;
+
   document.getElementById("language-label").textContent =
     getLanguageName(currentFile);
 
@@ -267,6 +299,8 @@ function openFile(filename) {
   renderTabs();
   updateCursorPosition();
 }
+
+// CURSOR POSITION
 
 function getCursorPosition() {
   if (usingMonaco && editor) {
@@ -294,6 +328,8 @@ function handleEditorChange() {
   scheduleSave();
   updateCursorPosition();
 }
+
+// MONACO EDITOR
 
 function createEditor() {
   const fallback = document.getElementById("editor-fallback");
@@ -339,6 +375,7 @@ function createEditor() {
 
       updateEditorLanguage();
       showToast("Monaco editor loaded");
+
     } catch (error) {
       console.error("Monaco editor error:", error);
       showToast("Could not load Monaco editor");
@@ -356,7 +393,8 @@ function safeFormat(value) {
   }
 
   try {
-    return JSON.stringify(value);
+    const result = JSON.stringify(value);
+    return result === undefined ? String(value) : result;
   } catch {
     return String(value);
   }
@@ -401,7 +439,9 @@ function renderConsole() {
       entry.classList.add("info");
     }
 
-    entry.textContent = `[${message.type.toUpperCase()}] ${message.text}`;
+    entry.textContent =
+      `[${message.type.toUpperCase()}] ${message.text}`;
+
     consoleOutput.appendChild(entry);
   });
 
@@ -413,7 +453,8 @@ function clearConsole() {
   renderConsole();
 }
 
-// Receive messages only from our preview iframe.
+// RECEIVE PREVIEW CONSOLE MESSAGES
+
 window.addEventListener("message", event => {
   if (event.source !== previewFrame.contentWindow) return;
 
@@ -503,9 +544,16 @@ function buildPreview() {
   if (/<head[^>]*>/i.test(html)) {
     html = html.replace(/<head([^>]*)>/i, match => match + bridge + styles);
   } else if (/<html[^>]*>/i.test(html)) {
-    html = html.replace(/<html[^>]*>/i, match => match + "<head>" + bridge + styles + "</head>");
+    html = html.replace(
+      /<html[^>]*>/i,
+      match => match + "<head>" + bridge + styles + "</head>"
+    );
   } else {
-    html = "<!DOCTYPE html><html><head>" + bridge + styles + "</head><body>" + html + "</body></html>";
+    html =
+      "<!DOCTYPE html><html><head>" +
+      bridge + styles +
+      "</head><body>" + html +
+      "</body></html>";
   }
 
   const script = `<script>${escapedJS}<\/script>`;
@@ -603,7 +651,9 @@ function renameFile(oldName) {
 function deleteFile(filename) {
   if (!Object.prototype.hasOwnProperty.call(files, filename)) return;
 
-  const confirmed = confirm(`Delete "${filename}"? This cannot be undone.`);
+  const confirmed = confirm(
+    `Delete "${filename}"? This cannot be undone.`
+  );
 
   if (!confirmed) return;
 
@@ -651,13 +701,209 @@ function resetProject() {
   showToast("Project reset");
 }
 
+// ZIP IMPORT AND EXPORT
+
+const ZIP_ALLOWED_EXTENSIONS = [
+  "html", "htm", "css", "js", "json", "txt",
+  "md", "xml", "svg", "csv", "ts", "tsx",
+  "jsx", "py", "java", "c", "cpp", "h",
+  "sql", "yaml", "yml", "toml", "sh",
+  "php", "go", "rs", "scss", "less"
+];
+
+async function exportProjectZip() {
+  if (typeof JSZip === "undefined") {
+    showToast("ZIP library could not load");
+    return;
+  }
+
+  storeCurrentFile();
+  saveFiles();
+
+  try {
+    const zip = new JSZip();
+
+    Object.keys(files).forEach(filename => {
+      zip.file(filename, files[filename]);
+    });
+
+    const blob = await zip.generateAsync({
+      type: "blob",
+      compression: "DEFLATE",
+      compressionOptions: {
+        level: 6
+      }
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "swypyy-project.zip";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    showToast("Project exported successfully");
+
+  } catch (error) {
+    console.error("ZIP export error:", error);
+    showToast("Could not export project");
+  }
+}
+
+async function importProjectZip(event) {
+  const input = event.target;
+  const file = input.files && input.files[0];
+
+  if (!file) return;
+
+  if (typeof JSZip === "undefined") {
+    showToast("ZIP library could not load");
+    input.value = "";
+    return;
+  }
+
+  if (!file.name.toLowerCase().endsWith(".zip")) {
+    showToast("Please select a ZIP file");
+    input.value = "";
+    return;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    showToast("ZIP file is too large (10 MB maximum)");
+    input.value = "";
+    return;
+  }
+
+  const confirmed = confirm(
+    "Import this project? Your current project will be replaced."
+  );
+
+  if (!confirmed) {
+    input.value = "";
+    return;
+  }
+
+  try {
+    storeCurrentFile();
+
+    const zip = await JSZip.loadAsync(file);
+    const importedFiles = {};
+
+    const entries = Object.values(zip.files).filter(entry => {
+      if (entry.dir) return false;
+
+      const name = entry.name;
+
+      // This version supports files in the ZIP root only.
+      if (name.includes("/") || name.includes("\\")) return false;
+
+      if (name.startsWith("__MACOSX")) return false;
+
+      if (name.startsWith(".")) return false;
+
+      return true;
+    });
+
+    if (entries.length > 100) {
+      throw new Error("Too many files. Maximum is 100.");
+    }
+
+    let totalSize = 0;
+
+    for (const entry of entries) {
+      const filename = entry.name;
+      const extension = filename.split(".").pop().toLowerCase();
+
+      if (!ZIP_ALLOWED_EXTENSIONS.includes(extension)) continue;
+
+      const content = await entry.async("string");
+
+      if (content.includes("\0")) continue;
+
+      totalSize += new Blob([content]).size;
+
+      if (totalSize > 5 * 1024 * 1024) {
+        throw new Error("Extracted files exceed the 5 MB limit.");
+      }
+
+      importedFiles[filename] = content;
+    }
+
+    if (Object.keys(importedFiles).length === 0) {
+      throw new Error("No supported text files found in this ZIP.");
+    }
+
+    files = importedFiles;
+
+    currentFile = Object.prototype.hasOwnProperty.call(
+      files,
+      "index.html"
+    )
+      ? "index.html"
+      : Object.keys(files)[0];
+
+    setEditorValue(files[currentFile]);
+
+    saveFiles();
+    renderFileList();
+    renderTabs();
+    updateEditorLanguage();
+    updateCursorPosition();
+    buildPreview();
+
+    showToast(
+      `Imported ${Object.keys(files).length} files successfully`
+    );
+
+  } catch (error) {
+    console.error("ZIP import error:", error);
+    showToast(error.message || "Could not import ZIP file");
+  }
+
+  input.value = "";
+}
+
+function openZipFilePicker() {
+  const input = document.getElementById("zip-file-input");
+
+  if (!input) {
+    showToast("ZIP input is missing from index.html");
+    return;
+  }
+
+  input.click();
+}
+
 // BUTTONS
 
-document.getElementById("run-button").addEventListener("click", buildPreview);
-document.getElementById("refresh-button").addEventListener("click", buildPreview);
-document.getElementById("new-file-button").addEventListener("click", createNewFile);
-document.getElementById("reset-button").addEventListener("click", resetProject);
-document.getElementById("clear-console-button").addEventListener("click", clearConsole);
+document.getElementById("run-button")
+  .addEventListener("click", buildPreview);
+
+document.getElementById("refresh-button")
+  .addEventListener("click", buildPreview);
+
+document.getElementById("new-file-button")
+  .addEventListener("click", createNewFile);
+
+document.getElementById("reset-button")
+  .addEventListener("click", resetProject);
+
+document.getElementById("clear-console-button")
+  .addEventListener("click", clearConsole);
+
+document.getElementById("export-zip-button")
+  .addEventListener("click", exportProjectZip);
+
+document.getElementById("import-zip-button")
+  .addEventListener("click", openZipFilePicker);
+
+document.getElementById("zip-file-input")
+  .addEventListener("change", importProjectZip);
 
 // KEYBOARD SHORTCUTS
 
@@ -669,6 +915,7 @@ document.addEventListener("keydown", event => {
 
     storeCurrentFile();
     saveFiles();
+
     showToast("Project saved");
   }
 
