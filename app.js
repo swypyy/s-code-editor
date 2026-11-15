@@ -7,9 +7,9 @@ const starterFiles = {
   <title>My First Website</title>
 </head>
 <body>
-  <h1>Hello, World!</h1>
+  <h1>Hello, Swypyy!</h1>
   <p>Welcome to S - Code Editor.</p>
-  <button onclick="alert('It works!')">Click me</button>
+  <button onclick="console.log('Button clicked!')">Test Console</button>
 </body>
 </html>`,
 
@@ -24,66 +24,87 @@ h1 {
   color: #7045db;
 }`,
 
-  "script.js": `console.log("Hello from S - Code Editor!");`
+  "script.js": `console.log("Hello from S - Code Editor!");
+
+console.warn("This is a warning example.");`
 };
+
+const STORAGE_KEY = "swypyy-code-editor-files";
 
 let files = {};
 let currentFile = "index.html";
 let editor = null;
 let usingMonaco = false;
 let saveTimer = null;
+let consoleMessages = [];
 
-const editorElement = document.getElementById("editor");
 const fileList = document.getElementById("file-list");
+const tabsContainer = document.getElementById("editor-tabs");
+const editorElement = document.getElementById("editor");
 const previewFrame = document.getElementById("preview-frame");
 const saveStatus = document.getElementById("save-status");
-const currentFileLabel = document.getElementById("current-file-label");
-const languageLabel = document.getElementById("language-label");
 const toast = document.getElementById("toast");
+const consoleOutput = document.getElementById("console-output");
+const consoleCount = document.getElementById("console-count");
 
 function showToast(message) {
   toast.textContent = message;
   toast.classList.add("show");
 
-  setTimeout(() => {
+  clearTimeout(showToast.timer);
+
+  showToast.timer = setTimeout(() => {
     toast.classList.remove("show");
   }, 2200);
 }
 
 function loadFiles() {
   try {
-    const saved = localStorage.getItem("swypyy-code-editor-files");
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const parsed = saved ? JSON.parse(saved) : null;
 
-    if (saved) {
-      files = JSON.parse(saved);
-    } else {
-      files = { ...starterFiles };
-    }
+    files = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : { ...starterFiles };
   } catch {
     files = { ...starterFiles };
   }
 
-  Object.keys(starterFiles).forEach(name => {
+  Object.keys(files).forEach(name => {
     if (typeof files[name] !== "string") {
-      files[name] = starterFiles[name];
+      delete files[name];
     }
   });
+
+  if (Object.keys(files).length === 0) {
+    files = { ...starterFiles };
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(files, currentFile)) {
+    currentFile = Object.keys(files)[0];
+  }
 }
 
 function saveFiles() {
   saveStatus.textContent = "Saving...";
 
   try {
-    localStorage.setItem(
-      "swypyy-code-editor-files",
-      JSON.stringify(files)
-    );
-
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(files));
     saveStatus.textContent = "Saved locally";
-  } catch {
-    saveStatus.textContent = "Storage unavailable";
+  } catch (error) {
+    saveStatus.textContent = "Save failed";
     showToast("Could not save. Browser storage may be full.");
   }
+}
+
+function scheduleSave() {
+  saveStatus.textContent = "Unsaved changes";
+
+  clearTimeout(saveTimer);
+
+  saveTimer = setTimeout(() => {
+    saveFiles();
+  }, 500);
 }
 
 function getLanguage(filename) {
@@ -91,56 +112,52 @@ function getLanguage(filename) {
 
   const languages = {
     html: "html",
+    htm: "html",
     css: "css",
     js: "javascript",
     json: "json",
     txt: "plaintext",
-    md: "markdown"
+    md: "markdown",
+    xml: "xml"
   };
 
   return languages[extension] || "plaintext";
 }
 
+function getLanguageName(filename) {
+  const language = getLanguage(filename);
+
+  const names = {
+    html: "HTML",
+    css: "CSS",
+    javascript: "JavaScript",
+    json: "JSON",
+    plaintext: "Plain Text",
+    markdown: "Markdown",
+    xml: "XML"
+  };
+
+  return names[language] || "Plain Text";
+}
+
 function getFileIcon(filename) {
   const extension = filename.split(".").pop().toLowerCase();
 
-  if (extension === "html") return "html-icon";
+  if (extension === "html" || extension === "htm") return "html-icon";
   if (extension === "css") return "css-icon";
   if (extension === "js") return "js-icon";
 
   return "";
 }
 
-function renderFileList() {
-  fileList.innerHTML = "";
+function getIconText(filename) {
+  const extension = filename.split(".").pop().toLowerCase();
 
-  Object.keys(files).forEach(filename => {
-    const button = document.createElement("button");
+  if (extension === "js") return "JS";
+  if (extension === "css") return "✳";
+  if (extension === "html" || extension === "htm") return "5";
 
-    button.className =
-      "file-item" + (filename === currentFile ? " active" : "");
-
-    const icon = document.createElement("span");
-    icon.className = "file-icon " + getFileIcon(filename);
-    icon.textContent = filename.endsWith(".js")
-      ? "JS"
-      : filename.endsWith(".css")
-        ? "✳"
-        : filename.endsWith(".html")
-          ? "5"
-          : "•";
-
-    const label = document.createElement("span");
-    label.textContent = filename;
-
-    button.append(icon, label);
-
-    button.addEventListener("click", () => {
-      openFile(filename);
-    });
-
-    fileList.appendChild(button);
-  });
+  return "•";
 }
 
 function getEditorValue() {
@@ -159,50 +176,111 @@ function setEditorValue(value) {
   }
 }
 
+function storeCurrentFile() {
+  if (files[currentFile] !== undefined) {
+    files[currentFile] = getEditorValue();
+  }
+}
+
+function renderFileList() {
+  fileList.innerHTML = "";
+
+  Object.keys(files).forEach(filename => {
+    const item = document.createElement("div");
+    item.className = "file-row";
+
+    const openButton = document.createElement("button");
+    openButton.className =
+      "file-item" + (filename === currentFile ? " active" : "");
+
+    const icon = document.createElement("span");
+    icon.className = "file-icon " + getFileIcon(filename);
+    icon.textContent = getIconText(filename);
+
+    const label = document.createElement("span");
+    label.textContent = filename;
+
+    openButton.append(icon, label);
+    openButton.addEventListener("click", () => openFile(filename));
+
+    const renameButton = document.createElement("button");
+    renameButton.className = "file-action";
+    renameButton.textContent = "✎";
+    renameButton.title = "Rename " + filename;
+    renameButton.addEventListener("click", () => renameFile(filename));
+
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "file-action delete-action";
+    deleteButton.textContent = "×";
+    deleteButton.title = "Delete " + filename;
+    deleteButton.addEventListener("click", () => deleteFile(filename));
+
+    item.append(openButton, renameButton, deleteButton);
+    fileList.appendChild(item);
+  });
+}
+
+function renderTabs() {
+  tabsContainer.innerHTML = "";
+
+  Object.keys(files).forEach(filename => {
+    const tab = document.createElement("button");
+    tab.className = "tab" + (filename === currentFile ? " active" : "");
+
+    const icon = document.createElement("span");
+    icon.className = "file-icon " + getFileIcon(filename);
+    icon.textContent = getIconText(filename);
+
+    const label = document.createElement("span");
+    label.textContent = filename;
+
+    tab.append(icon, label);
+    tab.addEventListener("click", () => openFile(filename));
+
+    tabsContainer.appendChild(tab);
+  });
+}
+
 function updateEditorLanguage() {
-  const language = getLanguage(currentFile);
-
-  const names = {
-    html: "HTML",
-    css: "CSS",
-    javascript: "JavaScript",
-    json: "JSON",
-    plaintext: "Plain Text",
-    markdown: "Markdown"
-  };
-
-  languageLabel.textContent = names[language] || "Plain Text";
+  document.getElementById("current-file-label").textContent = currentFile;
+  document.getElementById("language-label").textContent =
+    getLanguageName(currentFile);
 
   if (usingMonaco && editor) {
-    const model = editor.getModel();
-
-    if (model) {
-      monaco.editor.setModelLanguage(model, language);
-    }
+    monaco.editor.setModelLanguage(
+      editor.getModel(),
+      getLanguage(currentFile)
+    );
   }
 }
 
 function openFile(filename) {
-  if (!Object.hasOwn(files, filename)) return;
+  if (!Object.prototype.hasOwnProperty.call(files, filename)) return;
 
-  if (currentFile && editorElement) {
-    files[currentFile] = getEditorValue();
-  }
-
+  storeCurrentFile();
   currentFile = filename;
 
   setEditorValue(files[filename]);
 
-  currentFileLabel.textContent = filename;
-
   updateEditorLanguage();
   renderFileList();
+  renderTabs();
   updateCursorPosition();
+}
+
+function getCursorPosition() {
+  if (usingMonaco && editor) {
+    const position = editor.getPosition();
+    return editor.getModel().getOffsetAt(position);
+  }
+
+  return document.getElementById("editor-fallback").selectionStart;
 }
 
 function updateCursorPosition() {
   const value = getEditorValue();
-  const lines = value.slice(0, getCursorPosition()).split("\n");
+  const beforeCursor = value.slice(0, getCursorPosition());
+  const lines = beforeCursor.split("\n");
 
   const line = lines.length;
   const column = lines[lines.length - 1].length + 1;
@@ -211,38 +289,24 @@ function updateCursorPosition() {
     `Line ${line}, Column ${column}`;
 }
 
-function getCursorPosition() {
-  if (usingMonaco && editor) {
-    return editor.getModel().getOffsetAt(editor.getPosition());
-  }
-
-  return document.getElementById("editor-fallback").selectionStart;
-}
-
 function handleEditorChange() {
-  files[currentFile] = getEditorValue();
-
-  saveStatus.textContent = "Unsaved changes";
-
-  clearTimeout(saveTimer);
-
-  saveTimer = setTimeout(() => {
-    saveFiles();
-  }, 500);
-
+  storeCurrentFile();
+  scheduleSave();
   updateCursorPosition();
 }
 
 function createEditor() {
   const fallback = document.getElementById("editor-fallback");
-
   fallback.value = files[currentFile];
 
   fallback.addEventListener("input", handleEditorChange);
   fallback.addEventListener("keyup", updateCursorPosition);
   fallback.addEventListener("click", updateCursorPosition);
 
-  if (!window.require) return;
+  if (!window.require) {
+    showToast("Using basic editor mode");
+    return;
+  }
 
   require.config({
     paths: {
@@ -268,48 +332,199 @@ function createEditor() {
       });
 
       usingMonaco = true;
-
       fallback.remove();
 
       editor.onDidChangeModelContent(handleEditorChange);
-
       editor.onDidChangeCursorPosition(updateCursorPosition);
 
       updateEditorLanguage();
-      showToast("Code editor loaded");
+      showToast("Monaco editor loaded");
     } catch (error) {
-      console.error("Editor error:", error);
+      console.error("Monaco editor error:", error);
+      showToast("Could not load Monaco editor");
     }
   });
 }
 
-function buildPreview() {
-  files[currentFile] = getEditorValue();
-  saveFiles();
+// CONSOLE
 
-  const html = files["index.html"] || "";
+function safeFormat(value) {
+  if (typeof value === "string") return value;
+
+  if (value instanceof Error) {
+    return value.stack || value.message;
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function addConsoleMessage(type, values) {
+  const message = {
+    type,
+    text: values.map(safeFormat).join(" ")
+  };
+
+  consoleMessages.push(message);
+
+  if (consoleMessages.length > 300) {
+    consoleMessages.shift();
+  }
+
+  renderConsole();
+}
+
+function renderConsole() {
+  consoleOutput.innerHTML = "";
+  consoleCount.textContent = consoleMessages.length;
+
+  if (consoleMessages.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "console-empty";
+    empty.textContent = "Console is ready. Run your project to see messages.";
+    consoleOutput.appendChild(empty);
+    return;
+  }
+
+  consoleMessages.forEach(message => {
+    const entry = document.createElement("div");
+    entry.className = "console-entry";
+
+    if (message.type === "error") {
+      entry.classList.add("error");
+    } else if (message.type === "warn") {
+      entry.classList.add("warn");
+    } else if (message.type === "info") {
+      entry.classList.add("info");
+    }
+
+    entry.textContent = `[${message.type.toUpperCase()}] ${message.text}`;
+    consoleOutput.appendChild(entry);
+  });
+
+  consoleOutput.scrollTop = consoleOutput.scrollHeight;
+}
+
+function clearConsole() {
+  consoleMessages = [];
+  renderConsole();
+}
+
+// Receive messages only from our preview iframe.
+window.addEventListener("message", event => {
+  if (event.source !== previewFrame.contentWindow) return;
+
+  const data = event.data;
+
+  if (!data || data.source !== "swypyy-preview-console") return;
+  if (typeof data.type !== "string" || typeof data.text !== "string") return;
+
+  addConsoleMessage(data.type, [data.text]);
+});
+
+// PREVIEW
+
+function buildPreview() {
+  storeCurrentFile();
+  saveFiles();
+  clearConsole();
+
+  let html = files["index.html"] || "";
+
+  if (!html.trim()) {
+    html = "<!DOCTYPE html><html><head></head><body></body></html>";
+  }
+
   const css = files["styles.css"] || "";
   const js = files["script.js"] || "";
 
-  const documentContent = html.replace(
-    /<head([^>]*)>/i,
-    `<head$1><style>${css.replace(/<\/style/gi, "<\\/style")}</style>`
-  );
+  const escapedCSS = css.replace(/<\/style/gi, "<\\/style");
+  const escapedJS = js.replace(/<\/script/gi, "<\\/script");
 
-  const finalContent = documentContent.replace(
-    /<\/body>/i,
-    `<script>${js.replace(/<\/script/gi, "<\\/script")}<\/script></body>`
-  );
+  const bridge = `
+<script>
+(function () {
+  function format(value) {
+    if (typeof value === "string") return value;
 
-  previewFrame.srcdoc = finalContent;
+    if (value instanceof Error) {
+      return value.stack || value.message;
+    }
+
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      return String(value);
+    }
+  }
+
+  function send(type, values) {
+    try {
+      parent.postMessage({
+        source: "swypyy-preview-console",
+        type: type,
+        text: values.map(format).join(" ")
+      }, "*");
+    } catch (error) {}
+  }
+
+  ["log", "info", "warn", "error", "debug"].forEach(function (type) {
+    var original = console[type];
+
+    console[type] = function () {
+      var values = Array.from(arguments);
+
+      send(type === "debug" ? "info" : type, values);
+
+      if (original) {
+        original.apply(console, arguments);
+      }
+    };
+  });
+
+  window.addEventListener("error", function (event) {
+    send("error", [
+      event.message || "Unknown JavaScript error",
+      event.filename ? "at " + event.filename + ":" + event.lineno : ""
+    ]);
+  });
+
+  window.addEventListener("unhandledrejection", function (event) {
+    send("error", ["Unhandled promise rejection:", event.reason]);
+  });
+})();
+<\/script>`;
+
+  const styles = `<style>${escapedCSS}</style>`;
+
+  if (/<head[^>]*>/i.test(html)) {
+    html = html.replace(/<head([^>]*)>/i, match => match + bridge + styles);
+  } else if (/<html[^>]*>/i.test(html)) {
+    html = html.replace(/<html[^>]*>/i, match => match + "<head>" + bridge + styles + "</head>");
+  } else {
+    html = "<!DOCTYPE html><html><head>" + bridge + styles + "</head><body>" + html + "</body></html>";
+  }
+
+  const script = `<script>${escapedJS}<\/script>`;
+
+  if (/<\/body>/i.test(html)) {
+    html = html.replace(/<\/body>/i, script + "</body>");
+  } else {
+    html += script;
+  }
+
+  previewFrame.srcdoc = html;
 
   showToast("Preview updated");
 }
 
+// FILE MANAGEMENT
+
 function createNewFile() {
-  const filename = prompt(
-    "Enter a file name (example: about.html):"
-  );
+  const filename = prompt("Enter a file name (example: about.html):");
 
   if (!filename) return;
 
@@ -320,23 +535,104 @@ function createNewFile() {
     return;
   }
 
-  if (Object.hasOwn(files, cleanName)) {
+  if (Object.prototype.hasOwnProperty.call(files, cleanName)) {
     showToast("File already exists");
     return;
   }
 
+  storeCurrentFile();
+
   files[cleanName] = "";
+  currentFile = cleanName;
 
   saveFiles();
   renderFileList();
-  openFile(cleanName);
+  renderTabs();
+  setEditorValue("");
+
+  updateEditorLanguage();
+  updateCursorPosition();
 
   showToast("File created");
 }
 
+function renameFile(oldName) {
+  const newName = prompt("Enter the new file name:", oldName);
+
+  if (!newName) return;
+
+  const cleanName = newName.trim();
+
+  if (!/^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/.test(cleanName)) {
+    showToast("Invalid file name");
+    return;
+  }
+
+  if (
+    cleanName !== oldName &&
+    Object.prototype.hasOwnProperty.call(files, cleanName)
+  ) {
+    showToast("That file already exists");
+    return;
+  }
+
+  if (cleanName === oldName) return;
+
+  storeCurrentFile();
+
+  const updatedFiles = {};
+
+  Object.keys(files).forEach(name => {
+    updatedFiles[name === oldName ? cleanName : name] = files[name];
+  });
+
+  files = updatedFiles;
+
+  if (currentFile === oldName) {
+    currentFile = cleanName;
+  }
+
+  saveFiles();
+  renderFileList();
+  renderTabs();
+  updateEditorLanguage();
+
+  showToast("File renamed");
+}
+
+function deleteFile(filename) {
+  if (!Object.prototype.hasOwnProperty.call(files, filename)) return;
+
+  const confirmed = confirm(`Delete "${filename}"? This cannot be undone.`);
+
+  if (!confirmed) return;
+
+  storeCurrentFile();
+
+  delete files[filename];
+
+  const remaining = Object.keys(files);
+
+  if (remaining.length === 0) {
+    files = { "index.html": starterFiles["index.html"] };
+  }
+
+  if (currentFile === filename) {
+    currentFile = Object.keys(files)[0];
+    setEditorValue(files[currentFile]);
+  }
+
+  saveFiles();
+  renderFileList();
+  renderTabs();
+  updateEditorLanguage();
+
+  showToast("File deleted");
+}
+
 function resetProject() {
   const confirmed = confirm(
-    "Reset your project to the original starter files? Your current local changes will be lost."
+    "Reset the project to the original starter files? Your current changes will be lost."
   );
 
   if (!confirmed) return;
@@ -346,37 +642,32 @@ function resetProject() {
 
   saveFiles();
   renderFileList();
-  openFile(currentFile);
+  renderTabs();
+  setEditorValue(files[currentFile]);
+
+  updateEditorLanguage();
   buildPreview();
 
   showToast("Project reset");
 }
 
-document.getElementById("run-button").addEventListener(
-  "click",
-  buildPreview
-);
+// BUTTONS
 
-document.getElementById("refresh-button").addEventListener(
-  "click",
-  buildPreview
-);
+document.getElementById("run-button").addEventListener("click", buildPreview);
+document.getElementById("refresh-button").addEventListener("click", buildPreview);
+document.getElementById("new-file-button").addEventListener("click", createNewFile);
+document.getElementById("reset-button").addEventListener("click", resetProject);
+document.getElementById("clear-console-button").addEventListener("click", clearConsole);
 
-document.getElementById("new-file-button").addEventListener(
-  "click",
-  createNewFile
-);
-
-document.getElementById("reset-button").addEventListener(
-  "click",
-  resetProject
-);
+// KEYBOARD SHORTCUTS
 
 document.addEventListener("keydown", event => {
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+  const key = event.key.toLowerCase();
+
+  if ((event.ctrlKey || event.metaKey) && key === "s") {
     event.preventDefault();
 
-    files[currentFile] = getEditorValue();
+    storeCurrentFile();
     saveFiles();
     showToast("Project saved");
   }
@@ -387,7 +678,11 @@ document.addEventListener("keydown", event => {
   }
 });
 
+// START APP
+
 loadFiles();
 renderFileList();
+renderTabs();
+renderConsole();
 createEditor();
 buildPreview();
