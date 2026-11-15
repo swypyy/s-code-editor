@@ -1,148 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#09090f">
-  <meta name="description" content="S - Code Editor by Swypyy. A free browser-based code editor.">
-  <title>S - Code Editor | Swypyy</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#09090f">
+<title>S - Code Editor | Swypyy</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
 
-  <header class="topbar">
-    <a class="brand" href="./">
-      <span class="brand-mark">S</span>
-      <span class="brand-copy">
-        <strong>S - Code Editor</strong>
-        <small>by Swypyy</small>
-      </span>
-    </a>
+<header class="topbar">
+  <a class="brand" href="./">
+    <span class="brand-mark">S</span>
+    <span class="brand-copy">
+      <strong>S - Code Editor</strong>
+      <small>by Swypyy</small>
+    </span>
+  </a>
 
-    <div class="topbar-center">
-      <span class="status-dot"></span>
-      <span id="save-status">Saved locally</span>
+  <div class="topbar-center">
+    <span class="status-dot"></span>
+    <span id="save-status">Saved locally</span>
+  </div>
+
+  <div class="topbar-actions">
+    <button class="button button-quiet" id="reset-button">Reset</button>
+    <button class="button button-primary" id="run-button">▶ Run</button>
+  </div>
+</header>
+
+<main class="workspace">
+
+  <aside class="sidebar">
+    <div class="panel-heading">
+      <span>EXPLORER</span>
+      <button class="icon-button" id="new-file-button" title="New file">＋</button>
     </div>
 
-    <div class="topbar-actions">
-      <button class="button button-quiet" id="reset-button">Reset</button>
-      <button class="button button-primary" id="run-button">
-        ▶ Run
-      </button>
+    <div class="project-label">⌄ MY PROJECT</div>
+    <nav class="file-list" id="file-list"></nav>
+
+    <div class="sidebar-note">
+      <span>ⓘ</span>
+      <p>Your project is saved in this browser. Export features will be added later.</p>
     </div>
-  </header>
+  </aside>
 
-  <main class="workspace">
+  <section class="editor-panel">
+    <div class="tabs" id="editor-tabs"></div>
 
-    <!-- FILE EXPLORER -->
-    <aside class="sidebar">
+    <div class="editor-toolbar">
+      <span id="current-file-label">index.html</span>
+      <span class="editor-hint">Ctrl + S to save</span>
+    </div>
 
-      <div class="panel-heading">
-        <span>EXPLORER</span>
-        <button class="icon-button" id="new-file-button">＋</button>
+    <div id="editor">
+      <textarea id="editor-fallback" spellcheck="false"></textarea>
+    </div>
+
+    <div class="editor-footer">
+      <span><span class="status-dot"></span> Ready</span>
+      <span id="cursor-position">Line 1, Column 1</span>
+      <span id="language-label">HTML</span>
+    </div>
+  </section>
+
+  <section class="preview-panel">
+
+    <div class="preview-toolbar">
+      <div class="preview-title">
+        <span class="preview-symbol">◉</span>
+        <strong>Live Preview</strong>
       </div>
 
-      <div class="project-label">
-        <span>⌄</span> MY PROJECT
+      <div class="preview-actions">
+        <span class="preview-state">LOCAL</span>
+        <button class="icon-button" id="refresh-button" title="Refresh preview">↻</button>
       </div>
+    </div>
 
-      <nav class="file-list" id="file-list"></nav>
+    <div class="preview-canvas">
+      <iframe
+        id="preview-frame"
+        title="Project live preview"
+        sandbox="allow-scripts"
+      ></iframe>
+    </div>
 
-      <div class="sidebar-note">
-        <span>ⓘ</span>
-        <p>Your project is saved in this browser. It stays on this device unless you export it.</p>
-      </div>
-
-    </aside>
-
-    <!-- CODE EDITOR -->
-    <section class="editor-panel">
-
-      <div class="tabs">
-
-        <button class="tab active" data-file="index.html">
-          <span class="file-icon html-icon">5</span>
-          index.html
-        </button>
-
-        <button class="tab" data-file="styles.css">
-          <span class="file-icon css-icon">✳</span>
-          styles.css
-        </button>
-
-        <button class="tab" data-file="script.js">
-          <span class="file-icon js-icon">JS</span>
-          script.js
-        </button>
-
-      </div>
-
-      <div class="editor-toolbar">
-        <span id="current-file-label">index.html</span>
-        <span class="editor-hint">Ctrl + S to save</span>
-      </div>
-
-      <div id="editor">
-        <textarea
-          id="editor-fallback"
-          spellcheck="false"
-          aria-label="Code editor"
-        ></textarea>
-      </div>
-
-      <div class="editor-footer">
-        <span><span class="status-dot"></span> Ready</span>
-        <span id="cursor-position">Line 1, Column 1</span>
-        <span id="language-label">HTML</span>
-      </div>
-
-    </section>
-
-    <!-- LIVE PREVIEW -->
-    <section class="preview-panel">
-
-      <div class="preview-toolbar">
-
-        <div class="preview-title">
-          <span class="preview-symbol">◉</span>
-          <strong>Live Preview</strong>
+    <section class="console-panel">
+      <div class="console-toolbar">
+        <div class="console-heading">
+          <span>⌁</span>
+          <strong>Console</strong>
+          <span class="console-count" id="console-count">0</span>
         </div>
 
-        <div class="preview-actions">
-          <span class="preview-state">LOCAL</span>
-          <button class="icon-button" id="refresh-button">↻</button>
+        <div class="console-actions">
+          <button class="icon-button" id="clear-console-button" title="Clear console">⌫</button>
         </div>
-
       </div>
 
-      <div class="preview-canvas">
-        <iframe
-          id="preview-frame"
-          title="Project live preview"
-          sandbox="allow-scripts"
-        ></iframe>
+      <div class="console-output" id="console-output">
+        <div class="console-empty">Console is ready. Run your project to see messages.</div>
       </div>
-
-      <div class="preview-footer">
-        <span><span class="status-dot"></span> Preview ready</span>
-        <span>Runs in your browser</span>
-      </div>
-
     </section>
 
-  </main>
+    <div class="preview-footer">
+      <span><span class="status-dot"></span> Preview ready</span>
+      <span>Runs in your browser</span>
+    </div>
 
-  <div class="toast" id="toast" role="status"></div>
+  </section>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
+</main>
 
-  <script src="app.js"></script>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>
