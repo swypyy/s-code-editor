@@ -515,4 +515,35 @@ button {
   .button {
     padding: 8px 10px;
   }
+  
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.file-row .file-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-action {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 5px;
+  border-radius: 4px;
+  opacity: 0.65;
+}
+
+.file-action:hover {
+  opacity: 1;
+  background: var(--panel-light);
+  color: white;
+}
+
+.delete-action:hover {
+  color: var(--red);
+}
+
 }
