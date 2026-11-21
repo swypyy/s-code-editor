@@ -1,74 +1,67 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#09090f">
-  <title>S - Code Editor | Swypyy</title>
-
+  <meta name="description" content="S Code Editor by Swypyy. A free browser-based code editor.">
+  <title>S Code Editor v3.0 | Swypyy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
   <link rel="stylesheet" href="styles.css">
 </head>
-
-<body>
-
+<body data-theme="dark">
 <header class="topbar">
-  <a class="brand" href="./">
+  <a class="brand" href="./" aria-label="S Code Editor home">
     <span class="brand-mark">S</span>
-    <span class="brand-copy">
-      <strong>S - Code Editor</strong>
-      <small>by Swypyy</small>
-    </span>
+    <span class="brand-copy"><strong>S Code Editor</strong><small>by Swypyy <span class="version-tag">3.0</span></small></span>
   </a>
-
-  <div class="topbar-center">
-    <span class="status-dot"></span>
-    <span id="save-status">Saved locally</span>
-  </div>
-
+  <div class="topbar-center"><span class="status-dot"></span><span id="save-status">Ready</span></div>
   <div class="topbar-actions">
-    <input type="file" id="zip-file-input" accept=".zip,application/zip" hidden>
-
+    <button class="button button-quiet" id="projects-button">Projects</button>
     <button class="button button-quiet" id="import-zip-button">Import ZIP</button>
     <button class="button button-quiet" id="export-zip-button">Export ZIP</button>
+    <button class="button button-quiet" id="download-file-button">Download</button>
+    <button class="button button-quiet" id="theme-button" title="Switch theme">☀</button>
     <button class="button button-quiet" id="reset-button">Reset</button>
     <button class="button button-primary" id="run-button">▶ Run</button>
   </div>
 </header>
 
 <main class="workspace">
-
   <aside class="sidebar">
-    <div class="panel-heading">
-      <span>EXPLORER</span>
+    <div class="panel-heading"><span>EXPLORER</span><div class="heading-actions">
       <button class="icon-button" id="new-file-button" title="New file">＋</button>
-    </div>
-
-    <div class="project-label">⌄ MY PROJECT</div>
+      <button class="icon-button" id="new-folder-button" title="New folder">▣</button>
+    </div></div>
+    <div class="project-label"><span>⌄</span><span id="project-name-label">MY PROJECT</span></div>
     <nav class="file-list" id="file-list"></nav>
-
-    <div class="sidebar-note">
-      <span>ⓘ</span>
-      <p>Your project is saved in this browser. Import or export projects using ZIP files.</p>
-    </div>
+    <div class="sidebar-note"><span>ⓘ</span><p>Projects are saved in this browser. Export a ZIP to keep a backup.</p></div>
   </aside>
 
   <section class="editor-panel">
     <div class="tabs" id="editor-tabs"></div>
-
     <div class="editor-toolbar">
-      <span id="current-file-label">index.html</span>
-      <span class="editor-hint">Ctrl + S to save</span>
+      <div class="breadcrumbs"><span id="current-file-label">index.html</span></div>
+      <div class="editor-tools">
+        <button class="small-button" id="search-toggle-button" title="Find and replace">Find</button>
+        <button class="small-button" id="close-tab-button" title="Close current tab">× Close</button>
+      </div>
     </div>
+
+    <section class="search-panel" id="search-panel" hidden>
+      <input id="search-input" type="text" placeholder="Find">
+      <input id="replace-input" type="text" placeholder="Replace with">
+      <button class="small-button" id="find-next-button">Next</button>
+      <button class="small-button" id="replace-button">Replace</button>
+      <button class="small-button" id="replace-all-button">All</button>
+      <button class="icon-button" id="search-close-button" title="Close search">×</button>
+    </section>
 
     <div id="editor">
-      <textarea id="editor-fallback" spellcheck="false"></textarea>
+      <textarea id="editor-fallback" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
     </div>
-
     <div class="editor-footer">
       <span><span class="status-dot"></span> Ready</span>
       <span id="cursor-position">Line 1, Column 1</span>
@@ -78,100 +71,70 @@
 
   <section class="preview-panel">
     <div class="preview-toolbar">
-      <div class="preview-title">
-        <span class="preview-symbol">◉</span>
-        <strong>Live Preview</strong>
-      </div>
-
+      <div class="preview-title"><span class="preview-symbol">◉</span><strong>Live Preview</strong></div>
       <div class="preview-actions">
         <span class="preview-state">LOCAL</span>
         <button class="icon-button" id="refresh-button" title="Refresh preview">↻</button>
+        <button class="icon-button" id="fullscreen-button" title="Fullscreen preview">⛶</button>
       </div>
     </div>
-
-    <div class="preview-canvas">
+    <div class="preview-canvas" id="preview-canvas">
       <iframe id="preview-frame" title="Project live preview" sandbox="allow-scripts"></iframe>
     </div>
 
     <section class="console-panel">
       <div class="console-toolbar">
-        <div class="console-heading">
-          <span>⌁</span>
-          <strong>Console</strong>
-          <span class="console-count" id="console-count">0</span>
-        </div>
-
+        <div class="console-heading"><span>⌁</span><strong>Console</strong><span class="console-count" id="console-count">0</span></div>
         <div class="console-actions">
+          <select id="console-filter" aria-label="Filter console">
+            <option value="all">All</option><option value="log">Logs</option><option value="warn">Warnings</option><option value="error">Errors</option><option value="info">Info</option>
+          </select>
           <button class="icon-button" id="clear-console-button" title="Clear console">⌫</button>
         </div>
       </div>
-
-      <div class="console-output" id="console-output">
-        <div class="console-empty">Console is ready. Run your project to see messages.</div>
-      </div>
+      <div class="console-output" id="console-output"><div class="console-empty">Console is ready. Run your project to see messages.</div></div>
     </section>
-
-    <div class="preview-footer">
-      <span><span class="status-dot"></span> Preview ready</span>
-      <span>Runs in your browser</span>
-    </div>
+    <div class="preview-footer"><span><span class="status-dot"></span> Preview ready</span><span>Runs in your browser</span></div>
   </section>
-
 </main>
 
+<!-- Dialogs -->
+<dialog id="projects-dialog" class="app-dialog">
+  <form method="dialog" class="dialog-head"><div><strong>Projects</strong><p>Switch between projects saved in this browser.</p></div><button class="icon-button" value="cancel" aria-label="Close">×</button></form>
+  <div id="projects-list" class="projects-list"></div>
+  <div class="dialog-actions"><button class="button button-quiet" id="new-project-button" type="button">＋ New project</button></div>
+</dialog>
+
+<input type="file" id="zip-file-input" accept=".zip,application/zip" hidden>
 <div class="toast" id="toast" role="status"></div>
 
-<!-- Monaco Editor -->
+<!-- Monaco editor -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
-
-<!-- Load ZIP library with automatic fallback -->
+<!-- JSZip with fallback CDNs; app starts after the library check completes. -->
 <script>
 window.zipLibraryReady = (async function () {
+  if (window.JSZip) return true;
   const sources = [
     "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
-    "https://unpkg.com/jszip@3.10.1/dist/jszip.min.js",
-    "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+    "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js",
+    "https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"
   ];
-
   for (const source of sources) {
     try {
       await new Promise((resolve, reject) => {
         const script = document.createElement("script");
         script.src = source;
         script.onload = resolve;
-        script.onerror = () => {
-          script.remove();
-          reject(new Error("Could not load " + source));
-        };
+        script.onerror = () => { script.remove(); reject(new Error("ZIP source unavailable")); };
         document.head.appendChild(script);
       });
-
-      if (typeof window.JSZip === "function") {
-        console.log("ZIP library loaded:", source);
-        return true;
-      }
-    } catch (error) {
-      console.warn(error.message);
-    }
+      if (typeof window.JSZip === "function") return true;
+    } catch (error) { console.warn(error.message); }
   }
-
-  console.error("All ZIP library sources failed.");
+  console.error("JSZip could not be loaded. ZIP features are unavailable until a CDN is reachable.");
   return false;
 })();
 </script>
-
-<!-- Load application after ZIP library loading finishes -->
-<script>
-window.zipLibraryReady.then(function (loaded) {
-  if (!loaded) {
-    console.error("ZIP import and export are unavailable.");
-  }
-
-  const app = document.createElement("script");
-  app.src = "app.js";
-  document.body.appendChild(app);
-});
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>
